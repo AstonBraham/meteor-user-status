@@ -8,7 +8,7 @@ class UserStatus {
     _accounts = (Package && Package['accounts-base'] && Package['accounts-base'].Accounts) ? Package['accounts-base'].Accounts : undefined;
 
     Meteor.methods({
-      'user-status.update'(online, idle) {
+      async 'user-status.update'(online, idle) {
         check(online, Boolean);
         check(idle, Boolean);
 
@@ -16,9 +16,9 @@ class UserStatus {
           return false;
         }
 
-        const user = Meteor.users.findOne({ _id: this.userId });
-        if (user.profile.status?.online !== online || user.profile.status?.idle !== idle) {
-          Meteor.users?.update?.({
+        const user = await Meteor.users.findOneAsync({ _id: this.userId });
+        if (user?.profile?.status?.online !== online || user?.profile?.status?.idle !== idle) {
+          await Meteor.users?.updateAsync?.({
             _id: this.userId
           }, {
             $set: {
@@ -27,7 +27,7 @@ class UserStatus {
               'profile.status.idle': idle,
               'profile.status.lastSeen': new Date()
             }
-          }, noop);
+          });
         }
 
         return true;
@@ -36,10 +36,10 @@ class UserStatus {
 
     this.start();
   }
-  start() {
+  async start() {
     if (_accounts) {
-      this.onLogin = _accounts.onLogin((data) => {
-        Meteor.users?.update?.({
+      this.onLogin = _accounts.onLogin(async (data) => {
+        await Meteor.users?.updateAsync?.({
           _id: data.user._id
         }, {
           $set: {
@@ -49,12 +49,12 @@ class UserStatus {
             'profile.status.lastLogin': new Date(),
             'profile.status.lastSeen': new Date()
           }
-        }, noop);
+        });
       });
 
-      this.onLogout = _accounts.onLogout((data) => {
+      this.onLogout = _accounts.onLogout(async (data) => {
         if (data.user) {
-          Meteor.users?.update?.({
+          await Meteor.users?.updateAsync?.({
             _id: data.user._id
           }, {
             $set: {
@@ -63,9 +63,9 @@ class UserStatus {
               'profile.status.idle': false,
               'profile.status.lastSeen': new Date()
             }
-          }, noop);
+          });
         } else if (data.connection?.id) {
-          Meteor.users?.update?.({
+          await Meteor.users?.updateAsync?.({
             connection: data.connection.id
           }, {
             $set: {
@@ -73,7 +73,7 @@ class UserStatus {
               'profile.status.idle': false,
               'profile.status.lastSeen': new Date()
             }
-          }, noop);
+          });
         }
       });
 
@@ -81,11 +81,11 @@ class UserStatus {
         const connectionId = connection.id;
 
         connection.onClose(() => {
-          Meteor.setTimeout(() => {
+          Meteor.setTimeout(async () => {
             // USE TIMEOUT HERE TO AVOID SETTING idle STATUS
             // WHICH IS CALLED ON SOME BROWSERS VIA visibility API
             // UPON CLOSING BROWSER TAB OR WINDOW
-            Meteor.users?.update?.({
+            await Meteor.users?.updateAsync?.({
               connection: connectionId
             }, {
               $set: {
@@ -93,7 +93,7 @@ class UserStatus {
                 'profile.status.idle': false,
                 'profile.status.lastSeen': new Date()
               }
-            }, noop);
+            });
           }, 1024);
         });
       });

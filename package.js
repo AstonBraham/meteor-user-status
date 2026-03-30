@@ -7,9 +7,11 @@ Package.describe({
 });
 
 Package.onUse(function(api) {
-  api.versionsFrom('1.4');
+  api.versionsFrom('3.4');
   api.mainModule('client/main.js', 'client');
   api.mainModule('server/main.js', 'server');
   api.use(['ecmascript', 'check'], ['server', 'client']);
   api.use(['reactive-var', 'tracker'], 'client');
+  api.use('mongo', 'server');
+  api.use('accounts-base', 'server');
 });

@@ -4,7 +4,6 @@ import { Tracker } from 'meteor/tracker';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { check, Match } from 'meteor/check';
 
-const noop = function noop () {};
 const DEFAULT_THROTTLE_TIMING = 2048;
 const DEFAULT_IDLE_TIMEOUT = 30000;
 
@@ -91,13 +90,13 @@ class UserStatus {
     this.stopTimer();
     const user = Meteor.user?.();
     if (user && (user.profile?.status?.online !== true || user.profile?.status?.idle !== false)) {
-      try {
-        Meteor.call('user-status.update', true, false, () => {
+      Meteor.callAsync('user-status.update', true, false)
+        .then(() => {
           this.startTimer();
+        })
+        .catch(() => {
+          // -silently ignore errors, as the most probably UserStatus not initialized on a Server
         });
-      } catch (e) {
-        // -silently ignore errors, as the most probably UserStatus not initialized on a Server
-      }
     } else {
       this.startTimer();
     }
@@ -108,11 +107,10 @@ class UserStatus {
     this.stopTimer();
     const user = Meteor.user?.();
     if (user && user.profile?.status?.idle !== true) {
-      try {
-        Meteor.call('user-status.update', true, true, noop);
-      } catch (e) {
-        // -silently ignore errors, as the most probably UserStatus not initialized on a Server
-      }
+      Meteor.callAsync('user-status.update', true, true)
+        .catch(() => {
+          // -silently ignore errors, as the most probably UserStatus not initialized on a Server
+        });
     }
   }
 
